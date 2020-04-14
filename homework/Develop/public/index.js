@@ -1,26 +1,47 @@
 let transactions = [];
 let newValues = [];
+
+//adds old transactions to newValues array
+if (window.localStorage.getItem("transactions")){
+  let legacyTransactions = JSON.parse(window.localStorage.getItem("transactions"))
+  for(let i = 0; i< legacyTransactions.length; i++){
+    newValues.push(legacyTransactions[i])
+  }
+}
 let myChart;
+//stores local transactions until they're successfully send
+let transactionManifest = [];
 // get values stored in offline mode
 if (window.localStorage.getItem("transactions")){
   console.log("dealing with offline transactions")
-  localTransactions = JSON.parse(window.localStorage.getItem("transactions"))
+  parsedStorage = JSON.parse(window.localStorage.getItem("transactions"))
+  localTransactions = []
+  for (let i = 0; i < parsedStorage.length; i++){
+    let reString = JSON.stringify(parsedStorage[i])
+    localTransactions.push(reString)
+  }
   try{
     fetch("/api/transaction/bulk", {
       method: "POST",
-      body: JSON.stringify(localTransactions),
+      body: localTransactions,
       headers: {
         Accept: "application/json, text/plain, */*",
         "Content-Type": "application/json"
-      }
-    })
-    window.localStorage.removeItem("transactions")
+      }}).then(response =>{
+        if (response.ok){
+          
+          //after successfully pushing these values, remove the existing value from localStorage
+          console.log("pushed localstorage in bulk")
+          window.localStorage.removeItem("transactions")
+          newValues = []
+        }
+      })
+    }
+    catch(err){
+      console.log(err)
+      console.log("error in localStorage POST")
+    }
   }
-  //after successfully pushing these values, remove the existing value from localStorage
-  catch{
-    console.log("error in localStorage POST")
-  }
-}
 
 fetch("/api/transaction")
   .then(response => {
@@ -133,6 +154,12 @@ function sendTransaction(isAdding) {
   populateTable();
   populateTotal();
   
+
+  // put transaction in manifest, put manifest in local storage
+  window.localStorage.removeItem("transactions")
+  transactionManifest.push(transaction)
+  window.localStorage.setItem("transactions", JSON.stringify(transactionManifest))
+  console.log("Added transaction to manifest and local storage") 
   // also send to server
   try{
     console.log("Sending to server")
@@ -144,7 +171,12 @@ function sendTransaction(isAdding) {
         "Content-Type": "application/json"
       }
     })
-    .then(response => {    
+    .then(response => {
+      if (response.ok){
+        // removes transaction from local storage so it isn't double sent
+        window.localStorage.removeItem("transactions")
+        transactionManifest = []
+      }    
       return response.json();
     })
     .then(data => {
