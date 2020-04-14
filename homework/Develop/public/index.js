@@ -2,8 +2,9 @@ let transactions = [];
 let newValues = [];
 let myChart;
 // get values stored in offline mode
-if (localStorage.getItem("transactions")){
-  localTransactions = JSON.parse(Window.localStorage.getItem("transactions"))
+if (window.localStorage.getItem("transactions")){
+  console.log("dealing with offline transactions")
+  localTransactions = JSON.parse(window.localStorage.getItem("transactions"))
   try{
     fetch("/api/transaction/bulk", {
       method: "POST",
@@ -13,10 +14,11 @@ if (localStorage.getItem("transactions")){
         "Content-Type": "application/json"
       }
     })
+    window.localStorage.removeItem("transactions")
   }
   //after successfully pushing these values, remove the existing value from localStorage
-  finally{
-    Window.localStorage.removeItem("transactions")
+  catch{
+    console.log("error in localStorage POST")
   }
 }
 
@@ -132,37 +134,40 @@ function sendTransaction(isAdding) {
   populateTotal();
   
   // also send to server
-  fetch("/api/transaction", {
-    method: "POST",
-    body: JSON.stringify(transaction),
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json"
-    }
-  })
-  .then(response => {    
-    return response.json();
-  })
-  .then(data => {
-    if (data.errors) {
-      errorEl.textContent = "Missing Information";
-    }
-    else {
+  try{
+    console.log("Sending to server")
+    fetch("/api/transaction", {
+      method: "POST",
+      body: JSON.stringify(transaction),
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json"
+      }
+    })
+    .then(response => {    
+      return response.json();
+    })
+    .then(data => {
+      if (data.errors) {
+        errorEl.textContent = "Missing Information";
+      }
+      else {
+        // clear form
+        nameEl.value = "";
+        amountEl.value = "";
+      }
+    })
+  }
+  catch{
+      console.log("local storage function running")
+      newValues.push(transaction)
+      window.localStorage.removeItem("transactions")
+      window.localStorage.setItem("transactions", JSON.stringify(newValues))
       // clear form
       nameEl.value = "";
       amountEl.value = "";
-    }
-  })
-  .catch(err => {
-    console.log("local storage function running")
-    newValues.push(transaction)
-    Window.localStorage.removeItem("transactions")
-    Window.localStorage.setItem("transactions", JSON.stringify(newValues))
-    // clear form
-    nameEl.value = "";
-    amountEl.value = "";
-  });
-}
+    };
+  }
 
 document.querySelector("#add-btn").onclick = function() {
   sendTransaction(true);
