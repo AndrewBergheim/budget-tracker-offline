@@ -1,4 +1,5 @@
 let transactions = [];
+let newValues = [];
 let myChart;
 // get values stored in offline mode
 if (localStorage.getItem("transactions")){
@@ -153,9 +154,10 @@ function sendTransaction(isAdding) {
     }
   })
   .catch(err => {
-    // fetch failed, so save in indexed db
-    saveRecord(transaction);
-
+    console.log("local storage function running")
+    newValues.push(transaction)
+    Window.localStorage.removeItem("transactions")
+    Window.localStorage.setItem("transactions", JSON.stringify(newValues))
     // clear form
     nameEl.value = "";
     amountEl.value = "";

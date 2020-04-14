@@ -27,7 +27,6 @@
     */
 
    self.addEventListener('fetch', function(event) {
-    console.log("sw init")
     event.respondWith(
       caches.open('budgetCache').then(function(cache) {
         return cache.match(event.request).then(function (response) {
