@@ -1,5 +1,23 @@
 let transactions = [];
 let myChart;
+// get values stored in offline mode
+if (localStorage.getItem("transactions")){
+  localTransactions = JSON.parse(Window.localStorage.getItem("transactions"))
+  try{
+    fetch("/api/transaction/bulk", {
+      method: "POST",
+      body: JSON.stringify(localTransactions),
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Content-Type": "application/json"
+      }
+    })
+  }
+  //after successfully pushing these values, remove the existing value from localStorage
+  finally{
+    Window.localStorage.removeItem("transactions")
+  }
+}
 
 fetch("/api/transaction")
   .then(response => {
